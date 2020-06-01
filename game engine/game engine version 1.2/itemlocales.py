@@ -1,0 +1,5 @@
+ilbackground2 = []
+ilbackground3 = []
+ilbackground5 = [["apple",693,403,"id1"],["apple",111,201,"id2"]]
+ilbackground4 = [["sword1",417,260,"id1"]]
+ilbackground1 = [["apple",668,316,"id1"],["apple",751,928,"id3"],["apple",581,57,"id2"]]

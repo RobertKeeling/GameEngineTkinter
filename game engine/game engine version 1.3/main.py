@@ -1,0 +1,328 @@
+import makedictionaries,copy
+from classes import *
+from dictionaries import *
+
+def loaditems(bg):
+    global itemlist
+    itemlist = []
+    x = ildic["il"+bg]
+    for i in range(len(x)):
+        itemlist.append(item(can,copy.deepcopy(idic[x[i][0]]),et=x[i][3]))
+        itemlist[i].repos(can,x[i][1],x[i][2])
+
+def moveroom():
+    global chs,cvs,exits,bg,player1,vescroll,hoscroll
+    wf = width/800
+    hf = height/600
+    e = can.gettags(player1.detect(can,"exit")[0])[2]
+    d = exits[e]
+    nbg = d[0]
+    nex = d[1]
+    can.delete("all")
+    bg = copy.deepcopy(bgdic[nbg])
+    exits = bg.pop()
+    dimensions = bg[-1]
+    hoscroll = (dimensions[0]-800)*wf
+    vescroll = (dimensions[1]-600)*hf
+    bg = background(can,bg)
+    d = exits[nex]
+    move = d[2]
+    bg.move(can,move[0],move[1])
+    bg.hvscale(can,wf,hf,move[0]*wf,move[1]*hf)
+    for i in can.find_withtag(nex):
+        x = can.coords(i)
+        highy = 0
+        lowy = 10000
+        highx = 0
+        lowx = 10000
+        for y in [x[1],x[3],x[5],x[7]]:
+            if y >= highy:
+                highy = y
+            if y <= lowy:
+                lowy = y
+        for y in [x[0],x[2],x[4],x[6]]:
+            if y >= highx:
+                highx = y
+            if y <= lowx:
+                lowx = y
+        if d[3] == 0:
+            xspawn = (x[0]+x[2]+x[4]+x[6])/4
+            yspawn = lowy - player1.boxheight - 20
+        elif d[3] == 1:
+            xspawn = (x[0]+x[2]+x[4]+x[6])/4
+            yspawn = highy + player1.boxheight + 20
+        elif d[3] == 3:
+            yspawn = (x[1]+x[3]+x[5]+x[7])/4
+            xspawn = highx + player1.boxwidth + 20
+        elif d[3] == 2:
+            yspawn = (x[1]+x[3]+x[5]+x[7])/4
+            xspawn = lowx - player1.boxwidth - 20
+    player1.redraw(can,xspawn,yspawn)
+    chs = -move[0]*wf
+    cvs = -move[1]*hf
+    loaditems(nbg)
+
+def resize(event):
+    global width,height,hoscroll,vescroll,uwl,lwl,uvl,lvl,chs,cvs
+    if width/event.width != 2.5 and height/event.height != 5:
+        player1.hvscale(can,event.width/width,event.height/height)
+        hoscroll *= (event.width/width)
+        vescroll *= (event.height/height)
+        uwl *= (event.width/width)
+        lwl *= (event.width/width)
+        uvl *= (event.height/height)
+        lvl *= (event.height/height)
+        chs *= (event.width/width)
+        cvs *= (event.height/height)
+        bg.hvscale(can,event.width/width,event.height/height,-chs,-cvs)
+        height = event.height
+        width = event.width
+        player1.redraw(can)
+
+def rotation():
+    global direction
+    newdir = direction
+    for i in [[1,0,0,0,0],[1,0,0,1,1],[0,0,0,1,2],[0,1,0,1,3],[0,1,0,0,4],[0,1,1,0,5],[0,0,1,0,6],[1,0,1,0,7]]:
+        if keyset[0] == i[0] and keyset[1] == i[1] and keyset[2] == i[2] and keyset[3]== i[3]:
+            newdir = i[4]
+    if direction != newdir:
+        player1.rotate(can,(newdir-direction)*45)
+        direction = newdir
+
+def startnewgame():
+    bnewgame.destroy()
+    bloadgame.destroy()
+    bconfig.destroy()
+    start()
+
+def loadgame():
+    print("not yet implemented")
+
+def config():
+    print("not yet implemented")
+
+def mainmenu():
+    global bnewgame,bloadgame,bconfig
+    bnewgame = tkinter.Button(text="start game",command=startnewgame)
+    bnewgame.place(relx=0.3,rely=0.1,relwidth=0.4,relheight=0.2)
+    bloadgame = tkinter.Button(text="load game",command=loadgame)
+    bloadgame.place(relx=0.3,rely=0.35,relwidth=0.4,relheight=0.2)
+    bconfig = tkinter.Button(text="options",command=config)
+    bconfig.place(relx=0.3,rely=0.6,relwidth=0.4,relheight=0.2)
+
+
+def start(initial=True,abg=0):
+    global chs,cvs,exits,bg,player1,vescroll,hoscroll,can,keyset,direction,bgdic,uwl,lwl,uvl,lvl,speed,itemlist,mn,mnm,alreadywalking,im2
+    itemlist = []
+    speed = 7
+    alreadywalking = False
+    uwl = 350
+    lwl = 250
+    uvl = 450
+    lvl = 350
+    mn = ["play1","play1walk1","play1walk2","play1walk3"]
+    mnm = 0
+    can = tkinter.Canvas()
+    can.place(relx=0,rely=0,relwidth=1,relheight=1)
+    keyset = [0,0,0,0,0,0,0,0,0]
+    direction = 0
+    if initial == True:
+        bg1 = copy.deepcopy(bgdic["background1"])
+        exits = bg1.pop()
+        dimensions = bg1[-1]
+        bg = background(can,bg1)
+        loaditems("background1")
+        player1 = player(can,copy.deepcopy(spritedic[mn[mnm]]))
+        player1.redraw(can,400,300)
+        hoscroll = dimensions[0]-800
+        vescroll = dimensions[1]-600
+        chs = 0
+        cvs = 0
+        bind()
+        main()
+    else:
+        bg1 = copy.deepcopy(abg)
+        exits = bg1.pop()
+        dimensions = bg1[-1]
+        bg = background(can,bg1)
+        player1 = player(can,copy.deepcopy(spritedic["play1"]))
+        hoscroll = dimensions[0]-800
+        vescroll = dimensions[1]-600
+        chs = 0
+        cvs = 0
+        bind()
+        main()
+
+    
+
+def main():
+    global chs,cvs,exits,bg,player1,vescroll,hoscroll,alreadywalking
+    rotation()
+    if keyset[0] == 1:
+        rotation()
+        if player1.detect(can,"exit") != []:
+           moveroom()
+        elif cvs <= 0 or not(player1.hitbox[1].y<=uwl and player1.hitbox[1].y>=lwl):
+             if player1.hitbox[0].y>=0:
+                player1.move(can,0,-speed)
+        else:
+            for i in player1.hitbox:
+                i.move(0,-speed)
+            if player1.detect(can,"solid") == []:
+                bg.move(can,0,speed)
+                for i in itemlist:
+                    i.move(can,0,speed)
+                cvs -= speed
+            for i in player1.hitbox:
+                i.move(0,speed)
+    if keyset[1] == 1:
+        rotation()
+        if player1.detect(can,"exit") != []:
+           moveroom()
+        elif cvs >= vescroll or not(player1.hitbox[1].y<=uwl and player1.hitbox[1].y>=lwl):
+            if player1.hitbox[1].y<=height:
+                player1.move(can,0,speed)
+        else:
+            for i in player1.hitbox:
+                i.move(0,speed)
+            if player1.detect(can,"solid") == []:
+                bg.move(can,0,-speed)
+                for i in itemlist:
+                    i.move(can,0,-speed)
+                cvs += speed
+            for i in player1.hitbox:
+                i.move(0,-speed)
+    if keyset[2] == 1:
+        rotation()
+        if player1.detect(can,"exit") != []:
+           moveroom()
+        elif chs <= 0 or not(player1.hitbox[1].x<=uvl and player1.hitbox[1].x>=lvl):
+            if player1.hitbox[0].x>=0:
+                player1.move(can,-speed,0)
+        else:
+            for i in player1.hitbox:
+                i.move(-speed,0)
+            if player1.detect(can,"solid") == []:
+                bg.move(can,speed,0)
+                for i in itemlist:
+                    i.move(can,speed,0)
+                chs -= speed
+            for i in player1.hitbox:
+                i.move(speed,0)
+    if keyset[3] == 1:
+        rotation()
+        if player1.detect(can,"exit") != []:
+           moveroom()
+        elif chs >= hoscroll or not(player1.hitbox[1].x<=uvl and player1.hitbox[1].x>=lvl):
+            if player1.hitbox[1].x<=width:
+                player1.move(can,speed,0)
+        else:
+            for i in player1.hitbox:
+                i.move(speed,0)
+            if player1.detect(can,"solid") == []:
+                bg.move(can,-speed,0)
+                for i in itemlist:
+                    i.move(can,-speed,0)
+                chs += speed
+            for i in player1.hitbox:
+                i.move(-speed,0)
+    if keyset[4] == 1:
+        player1.scale(can,0.95)
+    if keyset[5] == 1:
+        player1.scale(can,1.05)
+    if keyset[6] == 1:
+        player1.rotate(can,3)
+    if keyset[7] == 1:
+        player1.rotate(can,-3)
+    if keyset[8] == 1:
+        player1.pickup(can)
+    window.after(9,main)
+
+def uppr(key):
+    global keyset
+    keyset[0] = 1
+def upre(key):
+    global keyset
+    keyset[0] = 0
+def downpr(key):
+    global keyset
+    keyset[1] = 1
+def downre(key):
+    global keyset
+    keyset[1] = 0
+def leftpr(key):
+    global keyset
+    keyset[2] = 1
+def leftre(key):
+    global keyset
+    keyset[2] = 0
+def rightpr(key):
+    global keyset
+    keyset[3] = 1
+def rightre(key):
+    global keyset
+    keyset[3] = 0
+def wpr(key):
+    global keyset
+    keyset[4] = 1
+def wre(key):
+    global keyset
+    keyset[4] = 0
+def epr(key):
+    global keyset
+    keyset[5] = 1
+def ere(key):
+    global keyset
+    keyset[5] = 0
+def spr(key):
+    global keyset
+    keyset[6] = 1
+def sre(key):
+    global keyset
+    keyset[6] = 0
+def dpr(key):
+    global keyset
+    keyset[7] = 1
+def dre(key):
+    global keyset
+    keyset[7] = 0
+def vpr(key):
+    global keyset
+    keyset[8] = 1
+def vre(key):
+    global keyset
+    keyset[8] = 0
+
+def bind():
+    window.bind_all("<Up>",uppr)
+    window.bind_all("<KeyRelease-Up>",upre)
+    window.bind_all("<Down>",downpr)
+    window.bind_all("<KeyRelease-Down>",downre)
+    window.bind_all("<Left>",leftpr)
+    window.bind_all("<KeyRelease-Left>",leftre)
+    window.bind_all("<Right>",rightpr)
+    window.bind_all("<KeyRelease-Right>",rightre)
+    window.bind_all("<w>",wpr)
+    window.bind_all("<KeyRelease-w>",wre)
+    window.bind_all("<e>",epr)
+    window.bind_all("<KeyRelease-e>",ere)
+    window.bind_all("<s>",spr)
+    window.bind_all("<KeyRelease-s>",sre)
+    window.bind_all("<d>",dpr)
+    window.bind_all("<KeyRelease-d>",dre)
+    window.bind_all("<v>",vpr)
+    window.bind_all("<KeyRelease-v>",vre)
+    window.bind_all("<Configure>",resize)
+    window.bind_all("<Escape>",pause)
+
+def pause(key):
+    can.delete_withtag("all")
+    print("w")
+
+window = tkinter.Tk()
+window.geometry("800x600")
+width = 800
+height = 600
+
+mainmenu()
+window.mainloop()
